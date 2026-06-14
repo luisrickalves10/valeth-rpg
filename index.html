@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valeth RPG - Menu Principal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game-shell" aria-label="Menu principal de Valeth RPG">
+    <header class="hero-header">
+      <h1>SE TORNE O HERÓI DE VALETH</h1>
+    </header>
+
+    <div class="map-frame">
+      <div class="map-stage" id="mapStage">
+        <img class="valeth-map" src="assets/valeth.png" alt="Mapa do Reino de Valeth">
+        <div class="vignette"></div>
+        <div class="ornament ornament-top-left"></div>
+        <div class="ornament ornament-top-right"></div>
+        <div class="ornament ornament-bottom-left"></div>
+        <div class="ornament ornament-bottom-right"></div>
+
+        <section class="region-layer" aria-label="Regiões de Valeth">
+          <button class="region-hotspot" style="--x: 46%; --y: 34%; --size: 12%;" data-region="Valeth" aria-label="Valeth"></button>
+          <button class="region-hotspot" style="--x: 32%; --y: 56%; --size: 11%;" data-region="Corália" aria-label="Corália"></button>
+          <button class="region-hotspot" style="--x: 25%; --y: 18%; --size: 12%;" data-region="Thurvael" aria-label="Thurvael"></button>
+          <button class="region-hotspot" style="--x: 78%; --y: 37%; --size: 12%;" data-region="Valdruun" aria-label="Valdruun"></button>
+          <button class="region-hotspot" style="--x: 20%; --y: 86%; --size: 11%;" data-region="A Forja" aria-label="A Forja"></button>
+          <button class="region-hotspot" style="--x: 11%; --y: 63%; --size: 10%;" data-region="Eriadun" aria-label="Eriadun"></button>
+          <button class="region-hotspot" style="--x: 51%; --y: 21%; --size: 10%;" data-region="Vorzak" aria-label="Vorzak"></button>
+          <button class="region-hotspot" style="--x: 72%; --y: 16%; --size: 10%;" data-region="Uldor" aria-label="Uldor"></button>
+          <button class="region-hotspot" style="--x: 89%; --y: 25%; --size: 12%;" data-region="Lua Silenciosa" aria-label="Lua Silenciosa"></button>
+          <button class="region-hotspot" style="--x: 91%; --y: 48%; --size: 10%;" data-region="Lodamar" aria-label="Lodamar"></button>
+          <button class="region-hotspot" style="--x: 72%; --y: 76%; --size: 18%;" data-region="Cinturão de Magmar" aria-label="Cinturão de Magmar"></button>
+        </section>
+
+        <div class="tooltip" id="regionTooltip" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <nav class="main-menu" aria-label="Menu principal">
+      <button class="menu-button" type="button"><span>📖</span>Modo História</button>
+      <button class="menu-button" type="button"><span>⚔️</span>Modo Combate</button>
+      <button class="menu-button" type="button"><span>📚</span>Biblioteca Elanorium</button>
+      <button class="menu-button" type="button"><span>📜</span>Regras</button>
+      <button class="menu-button" type="button"><span>⚙️</span>Opções</button>
+    </nav>
+
+    <footer class="credit">Desenvolvido por Luis Henrique</footer>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-sigil">✦</div>
+      <h2 id="modalTitle">Funcionalidade em desenvolvimento</h2>
+      <p>Este caminho ainda está sendo escrito nos anais de Valeth.</p>
+      <button class="modal-close" id="modalClose" type="button">Fechar</button>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
