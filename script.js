@@ -457,7 +457,15 @@ function closeInitiativeModal() {
 initiativeStart.addEventListener("click", () => {
   if (initiativeStart.disabled) return;
   closeInitiativeModal();
-  // Set currentTurnIndex to first in initiative order
+
+  // Log the initiative order into combat log
+  const order = battleState.initiativeOrder.map((id, i) => {
+    const p = battleState.players.find(pl => pl.id === id);
+    return `${i + 1}º ${p.name} (${initiativeRolls[id]})`;
+  });
+  battleState.log.push(`⚔️ Iniciativa definida: ${order.join(" → ")}`);
+  battleState.log.push(`Vez de ${battleState.players.find(p => p.id === battleState.initiativeOrder[0]).name} agir.`);
+
   battleState.currentTurnIndex = 0;
   advanceTurnToNextAlive();
   renderBattle();
