@@ -474,7 +474,7 @@ button {
   inset: 0;
   z-index: 40;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) 170px;
+  grid-template-rows: auto auto auto minmax(0, 1fr) 170px;
   gap: 12px;
   padding: 14px;
   overflow: hidden;
@@ -843,29 +843,67 @@ button {
   display: none;
 }
 
-/* ── Initiative Modal ─────────────────────────────────── */
+/* ── Initiative Inline Panel ──────────────────────────── */
 
-.initiative-modal {
-  width: min(760px, 100%);
+.initiative-panel {
+  padding: 10px 14px;
+  border: 1px solid rgba(214, 162, 74, 0.6);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(214, 162, 74, 0.1), transparent 55%),
+    rgba(8, 6, 4, 0.88);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
 }
 
-.initiative-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 22px 0 16px;
+.initiative-panel[hidden] {
+  display: none;
+}
+
+.initiative-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.initiative-panel-title {
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.initiative-start-btn {
+  background: linear-gradient(180deg, rgba(214,162,74,0.9), rgba(120,70,18,0.95)) !important;
+  color: #0a0704 !important;
+  font-weight: bold !important;
+  border-color: var(--gold-light) !important;
+  opacity: 1 !important;
+}
+
+.initiative-start-btn:disabled {
+  opacity: 0.35 !important;
+  cursor: default;
+}
+
+/* Grid of player D20 cards */
+.initiative-inline-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .initiative-card {
+  flex: 1 1 120px;
+  max-width: 160px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 18px 14px;
-  border: 1px solid rgba(214, 162, 74, 0.55);
-  background:
-    radial-gradient(circle at top, rgba(214, 162, 74, 0.14), transparent 58%),
-    linear-gradient(145deg, rgba(22, 15, 8, 0.98), rgba(7, 5, 4, 0.98));
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1px solid rgba(214, 162, 74, 0.45);
+  background: rgba(0,0,0,0.3);
 }
 
 .initiative-card.is-human {
@@ -874,32 +912,35 @@ button {
 
 .initiative-card .player-label {
   color: var(--gold-light);
-  font-size: 0.88rem;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .initiative-card .player-label.human-label {
   color: #82c8ff;
 }
 
+/* D20 die */
 .d20-container {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 58px;
+  height: 58px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .d20-svg {
   width: 100%;
   height: 100%;
   transition: transform 0.15s ease, filter 0.15s ease;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.7));
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.7));
 }
 
 .d20-container:not(.is-rolled):hover .d20-svg {
-  transform: scale(1.08) rotate(-4deg);
-  filter: drop-shadow(0 6px 18px rgba(214, 162, 74, 0.5));
+  transform: scale(1.1) rotate(-5deg);
+  filter: drop-shadow(0 5px 14px rgba(214, 162, 74, 0.55));
 }
 
 .d20-container.is-rolling .d20-svg {
@@ -912,9 +953,9 @@ button {
 
 @keyframes diceRoll {
   0%   { transform: rotate(0deg) scale(1); }
-  20%  { transform: rotate(-30deg) scale(1.14); }
-  45%  { transform: rotate(18deg) scale(0.92); }
-  65%  { transform: rotate(-12deg) scale(1.06); }
+  20%  { transform: rotate(-32deg) scale(1.15); }
+  45%  { transform: rotate(20deg) scale(0.9); }
+  65%  { transform: rotate(-12deg) scale(1.07); }
   82%  { transform: rotate(6deg) scale(0.97); }
   100% { transform: rotate(0deg) scale(1); }
 }
@@ -926,7 +967,7 @@ button {
   align-items: center;
   justify-content: center;
   font-family: Georgia, serif;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: bold;
   color: var(--gold-light);
   text-shadow: 0 0 8px rgba(214, 162, 74, 0.9), 0 2px 4px #000;
@@ -945,24 +986,24 @@ button {
 }
 
 .d20-hint {
-  font-size: 0.74rem;
-  color: rgba(243, 229, 201, 0.55);
-  letter-spacing: 0.06em;
+  font-size: 0.66rem;
+  color: rgba(243, 229, 201, 0.5);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .roll-btn {
-  min-width: 110px;
-  padding: 8px 14px;
+  padding: 5px 10px;
   cursor: pointer;
   color: var(--black);
   background: linear-gradient(180deg, #ffe5a8, #c38432);
   border: 1px solid #ffe7ad;
   font-weight: bold;
-  font-size: 0.82rem;
-  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow: 0 0 14px rgba(214, 162, 74, 0.3);
+  box-shadow: 0 0 10px rgba(214, 162, 74, 0.3);
   transition: filter 0.15s ease, transform 0.1s ease;
 }
 
@@ -977,52 +1018,47 @@ button {
 }
 
 .ai-auto-badge {
-  padding: 6px 12px;
-  font-size: 0.78rem;
-  color: rgba(243, 229, 201, 0.6);
-  border: 1px solid rgba(214, 162, 74, 0.28);
-  background: rgba(0, 0, 0, 0.28);
-  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  color: rgba(243, 229, 201, 0.55);
+  border: 1px solid rgba(214, 162, 74, 0.22);
+  background: rgba(0, 0, 0, 0.22);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.initiative-order {
-  margin: 6px 0 18px;
-  padding: 14px 18px;
-  border: 1px solid rgba(214, 162, 74, 0.38);
-  background: rgba(0, 0, 0, 0.32);
-  text-align: left;
+/* Inline order list */
+.initiative-order-inline {
+  margin-top: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(214, 162, 74, 0.3);
+  background: rgba(0,0,0,0.28);
 }
 
-.initiative-order strong {
-  display: block;
-  margin-bottom: 10px;
-  color: var(--gold-light);
-  font-size: 0.88rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.initiative-order ol {
+.initiative-order-inline ol {
   margin: 0;
-  padding-left: 22px;
+  padding-left: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
 }
 
-.initiative-order li {
-  color: rgba(243, 229, 201, 0.88);
-  font-size: 0.92rem;
-  line-height: 1.7;
+.initiative-order-inline li {
+  color: rgba(243, 229, 201, 0.82);
+  font-size: 0.8rem;
+  line-height: 1.6;
 }
 
-.initiative-order li .order-score {
+.initiative-order-inline li .order-score {
   color: var(--gold);
   font-weight: bold;
 }
 
-.initiative-order li.is-first {
+.initiative-order-inline li.is-first {
   color: var(--gold-light);
 }
 
+/* Active turn highlight on player boards */
 .player-board.is-active-turn {
   border-color: rgba(255, 225, 100, 0.9);
   box-shadow: inset 0 0 22px rgba(0,0,0,0.55), 0 0 28px rgba(214, 162, 74, 0.42);
@@ -1044,7 +1080,11 @@ button {
 }
 
 @media (max-width: 560px) {
-  .initiative-grid {
-    grid-template-columns: 1fr;
+  .initiative-inline-grid {
+    gap: 8px;
+  }
+  .initiative-card {
+    flex-basis: calc(50% - 4px);
+    max-width: none;
   }
 }

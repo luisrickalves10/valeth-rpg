@@ -310,20 +310,20 @@ function createBattle(humans, roomData = null) {
 
 // ── Initiative System ───────────────────────────────────
 
-const initiativeModal   = document.getElementById("initiativeModal");
-const initiativeGrid    = document.getElementById("initiativeGrid");
-const initiativeOrder   = document.getElementById("initiativeOrder");
+const initiativeGrid      = document.getElementById("initiativeGrid");
+const initiativeOrder     = document.getElementById("initiativeOrder");
 const initiativeOrderList = document.getElementById("initiativeOrderList");
-const initiativeStart   = document.getElementById("initiativeStart");
+const initiativeStart     = document.getElementById("initiativeStart");
+const initiativePanel     = document.getElementById("initiativePanel");
 
-let initiativeRolls = {};   // { playerId: number }
-let initiativePending = []; // player ids that still need to roll (humans only)
+let initiativeRolls   = {};
+let initiativePlayers = [];
+let initiativePending = [];
 
 function d20Roll() {
   return Math.floor(Math.random() * 20) + 1;
 }
 
-// Build SVG for the d20 face
 function d20Svg(color = "#1a1208") {
   return `
 <svg class="d20-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -344,24 +344,20 @@ function d20Svg(color = "#1a1208") {
 </svg>`;
 }
 
-let initiativePlayers = []; // full player list captured when modal opens
-
-function openInitiativeModal(players) {
-  initiativeRolls = {};
+function openInitiativePanel(players) {
+  initiativeRolls   = {};
   initiativePlayers = players;
   initiativePending = players.filter(p => p.isHuman).map(p => p.id);
   initiativeStart.disabled = true;
+  initiativeStart.textContent = "Aguardando rolagens...";
   initiativeOrder.hidden = true;
   initiativeOrderList.innerHTML = "";
 
   initiativeGrid.innerHTML = players.map(player => {
     const isHuman = player.isHuman;
-    const labelClass = isHuman ? "human-label" : "";
-    const typeTag = isHuman ? "Humano" : "IA";
-
     return `
       <div class="initiative-card ${isHuman ? "is-human" : ""}" id="icard-${player.id}">
-        <span class="player-label ${labelClass}">${player.name} <small style="opacity:.6">${typeTag}</small></span>
+        <span class="player-label ${isHuman ? "human-label" : ""}">${player.name} <small style="opacity:.6">${isHuman ? "Humano" : "IA"}</small></span>
         <div class="d20-container" id="d20-${player.id}">
           ${d20Svg()}
           <span class="d20-result" id="d20result-${player.id}"></span>
@@ -374,17 +370,16 @@ function openInitiativeModal(players) {
       </div>`;
   }).join("");
 
-  initiativeModal.classList.add("is-open");
-  initiativeModal.setAttribute("aria-hidden", "false");
+  initiativePanel.hidden = false;
 
-  // AI players roll automatically with a short staggered delay
+  // IAs rolam automaticamente com delay escalonado
   players.filter(p => !p.isHuman).forEach((player, idx) => {
     setTimeout(() => {
       const roll = d20Roll();
       initiativeRolls[player.id] = roll;
       applyRollVisual(player.id, roll);
       checkAllRolled();
-    }, 400 + idx * 350);
+    }, 500 + idx * 400);
   });
 }
 
@@ -392,7 +387,7 @@ function rollInitiative(playerId) {
   if (initiativeRolls[playerId] !== undefined) return;
 
   const container = document.getElementById(`d20-${playerId}`);
-  const btn = document.getElementById(`rollbtn-${playerId}`);
+  const btn       = document.getElementById(`rollbtn-${playerId}`);
   if (!container) return;
 
   container.classList.add("is-rolling");
@@ -404,13 +399,11 @@ function rollInitiative(playerId) {
     container.classList.remove("is-rolling");
     initiativeRolls[playerId] = roll;
     applyRollVisual(playerId, roll);
-
     initiativePending = initiativePending.filter(id => id !== playerId);
     checkAllRolled();
   }, 580);
 }
 
-// expose to inline onclick
 window.rollInitiative = rollInitiative;
 
 function applyRollVisual(playerId, roll) {
@@ -427,25 +420,21 @@ function applyRollVisual(playerId, roll) {
 
 function checkAllRolled() {
   const players = initiativePlayers;
+  if (!players.length) return;
   const allDone = players.every(p => initiativeRolls[p.id] !== undefined);
   if (!allDone) return;
 
-  // Sort descending — ties broken randomly
   const sorted = [...players].sort((a, b) => {
     const diff = initiativeRolls[b.id] - initiativeRolls[a.id];
     return diff !== 0 ? diff : Math.random() - 0.5;
   });
 
-  // Store initiative order on battleState
   battleState.initiativeOrder = sorted.map(p => p.id);
 
-  // Render the order list
   initiativeOrderList.innerHTML = sorted.map((p, i) => {
     const score = initiativeRolls[p.id];
-    const nat = score === 20 ? " 🌟 Nat 20!" : score === 1 ? " 💀 Nat 1" : "";
-    return `<li class="${i === 0 ? "is-first" : ""}">
-      ${i + 1}. ${p.name} — <span class="order-score">${score}</span>${nat}
-    </li>`;
+    const nat   = score === 20 ? " 🌟" : score === 1 ? " 💀" : "";
+    return `<li class="${i === 0 ? "is-first" : ""}">${i + 1}. ${p.name} — <span class="order-score">${score}</span>${nat}</li>`;
   }).join("");
 
   initiativeOrder.hidden = false;
@@ -453,21 +442,19 @@ function checkAllRolled() {
   initiativeStart.textContent = "⚔️ Iniciar Batalha";
 }
 
-function closeInitiativeModal() {
-  initiativeModal.classList.remove("is-open");
-  initiativeModal.setAttribute("aria-hidden", "true");
+function closeInitiativePanel() {
+  initiativePanel.hidden = true;
 }
 
 initiativeStart.addEventListener("click", () => {
   if (initiativeStart.disabled) return;
-  closeInitiativeModal();
+  closeInitiativePanel();
 
-  // Log the initiative order into combat log
   const order = battleState.initiativeOrder.map((id, i) => {
     const p = battleState.players.find(pl => pl.id === id);
     return `${i + 1}º ${p.name} (${initiativeRolls[id]})`;
   });
-  battleState.log.push(`⚔️ Iniciativa definida: ${order.join(" → ")}`);
+  battleState.log.push(`⚔️ Iniciativa: ${order.join(" → ")}`);
   battleState.log.push(`Vez de ${battleState.players.find(p => p.id === battleState.initiativeOrder[0]).name} agir.`);
 
   battleState.currentTurnIndex = 0;
@@ -475,6 +462,7 @@ initiativeStart.addEventListener("click", () => {
   renderBattle();
   startAi();
 });
+
 
 // ── Turn management ─────────────────────────────────────
 
@@ -520,8 +508,8 @@ function startBattle(humans, roomData = null) {
   setupRoomPanel(roomData);
   connectRoomSocket();
   renderBattle();
-  // Open initiative modal instead of immediately starting AI
-  openInitiativeModal(battleState.players);
+  // Open initiative panel inside battlefield (no modal)
+  openInitiativePanel(battleState.players);
 }
 
 function setupRoomPanel(roomData) {
