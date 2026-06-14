@@ -344,8 +344,11 @@ function d20Svg(color = "#1a1208") {
 </svg>`;
 }
 
+let initiativePlayers = []; // full player list captured when modal opens
+
 function openInitiativeModal(players) {
   initiativeRolls = {};
+  initiativePlayers = players;
   initiativePending = players.filter(p => p.isHuman).map(p => p.id);
   initiativeStart.disabled = true;
   initiativeOrder.hidden = true;
@@ -380,7 +383,7 @@ function openInitiativeModal(players) {
       const roll = d20Roll();
       initiativeRolls[player.id] = roll;
       applyRollVisual(player.id, roll);
-      checkAllRolled(players);
+      checkAllRolled();
     }, 400 + idx * 350);
   });
 }
@@ -403,7 +406,7 @@ function rollInitiative(playerId) {
     applyRollVisual(playerId, roll);
 
     initiativePending = initiativePending.filter(id => id !== playerId);
-    checkAllRolled(battleState.players);
+    checkAllRolled();
   }, 580);
 }
 
@@ -422,7 +425,8 @@ function applyRollVisual(playerId, roll) {
   if (hintEl) hintEl.style.visibility = "hidden";
 }
 
-function checkAllRolled(players) {
+function checkAllRolled() {
+  const players = initiativePlayers;
   const allDone = players.every(p => initiativeRolls[p.id] !== undefined);
   if (!allDone) return;
 
