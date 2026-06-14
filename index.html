@@ -118,6 +118,21 @@
     </section>
   </div>
 
+  <!-- Modal de Iniciativa D20 -->
+  <div class="modal-backdrop" id="initiativeModal" aria-hidden="true">
+    <section class="modal initiative-modal" role="dialog" aria-modal="true" aria-labelledby="initiativeModalTitle">
+      <div class="modal-sigil">🎲</div>
+      <h2 id="initiativeModalTitle">Rolagem de Iniciativa</h2>
+      <p id="initiativeModalDesc">Cada jogador deve rolar o D20 para determinar a ordem de combate. Maior resultado age primeiro!</p>
+      <div class="initiative-grid" id="initiativeGrid"></div>
+      <div class="initiative-order" id="initiativeOrder" hidden>
+        <strong>Ordem de Turno</strong>
+        <ol id="initiativeOrderList"></ol>
+      </div>
+      <button class="modal-close" id="initiativeStart" type="button" disabled>Iniciar Batalha</button>
+    </section>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

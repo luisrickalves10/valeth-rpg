@@ -308,17 +308,208 @@ function createBattle(humans, roomData = null) {
   };
 }
 
+// ── Initiative System ───────────────────────────────────
+
+const initiativeModal   = document.getElementById("initiativeModal");
+const initiativeGrid    = document.getElementById("initiativeGrid");
+const initiativeOrder   = document.getElementById("initiativeOrder");
+const initiativeOrderList = document.getElementById("initiativeOrderList");
+const initiativeStart   = document.getElementById("initiativeStart");
+
+let initiativeRolls = {};   // { playerId: number }
+let initiativePending = []; // player ids that still need to roll (humans only)
+
+function d20Roll() {
+  return Math.floor(Math.random() * 20) + 1;
+}
+
+// Build SVG for the d20 face
+function d20Svg(color = "#1a1208") {
+  return `
+<svg class="d20-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="50,4 96,28 96,72 50,96 4,72 4,28"
+    fill="${color}" stroke="#d6a24a" stroke-width="2.5"/>
+  <polygon points="50,4 96,28 50,50"
+    fill="none" stroke="rgba(214,162,74,0.35)" stroke-width="1"/>
+  <polygon points="96,28 96,72 50,50"
+    fill="none" stroke="rgba(214,162,74,0.35)" stroke-width="1"/>
+  <polygon points="96,72 50,96 50,50"
+    fill="none" stroke="rgba(214,162,74,0.35)" stroke-width="1"/>
+  <polygon points="50,96 4,72 50,50"
+    fill="none" stroke="rgba(214,162,74,0.35)" stroke-width="1"/>
+  <polygon points="4,72 4,28 50,50"
+    fill="none" stroke="rgba(214,162,74,0.35)" stroke-width="1"/>
+  <polygon points="4,28 50,4 50,50"
+    fill="none" stroke="rgba(214,162,74,0.35)" stroke-width="1"/>
+</svg>`;
+}
+
+function openInitiativeModal(players) {
+  initiativeRolls = {};
+  initiativePending = players.filter(p => p.isHuman).map(p => p.id);
+  initiativeStart.disabled = true;
+  initiativeOrder.hidden = true;
+  initiativeOrderList.innerHTML = "";
+
+  initiativeGrid.innerHTML = players.map(player => {
+    const isHuman = player.isHuman;
+    const labelClass = isHuman ? "human-label" : "";
+    const typeTag = isHuman ? "Humano" : "IA";
+
+    return `
+      <div class="initiative-card ${isHuman ? "is-human" : ""}" id="icard-${player.id}">
+        <span class="player-label ${labelClass}">${player.name} <small style="opacity:.6">${typeTag}</small></span>
+        <div class="d20-container" id="d20-${player.id}">
+          ${d20Svg()}
+          <span class="d20-result" id="d20result-${player.id}"></span>
+        </div>
+        <span class="d20-hint" id="d20hint-${player.id}">${isHuman ? "Clique para rolar" : ""}</span>
+        ${isHuman
+          ? `<button class="roll-btn" id="rollbtn-${player.id}" type="button" onclick="rollInitiative('${player.id}')">🎲 Rolar D20</button>`
+          : `<span class="ai-auto-badge">Rolando...</span>`
+        }
+      </div>`;
+  }).join("");
+
+  initiativeModal.classList.add("is-open");
+  initiativeModal.setAttribute("aria-hidden", "false");
+
+  // AI players roll automatically with a short staggered delay
+  players.filter(p => !p.isHuman).forEach((player, idx) => {
+    setTimeout(() => {
+      const roll = d20Roll();
+      initiativeRolls[player.id] = roll;
+      applyRollVisual(player.id, roll);
+      checkAllRolled(players);
+    }, 400 + idx * 350);
+  });
+}
+
+function rollInitiative(playerId) {
+  if (initiativeRolls[playerId] !== undefined) return;
+
+  const container = document.getElementById(`d20-${playerId}`);
+  const btn = document.getElementById(`rollbtn-${playerId}`);
+  if (!container) return;
+
+  container.classList.add("is-rolling");
+  if (btn) btn.disabled = true;
+
+  const roll = d20Roll();
+
+  setTimeout(() => {
+    container.classList.remove("is-rolling");
+    initiativeRolls[playerId] = roll;
+    applyRollVisual(playerId, roll);
+
+    initiativePending = initiativePending.filter(id => id !== playerId);
+    checkAllRolled(battleState.players);
+  }, 580);
+}
+
+// expose to inline onclick
+window.rollInitiative = rollInitiative;
+
+function applyRollVisual(playerId, roll) {
+  const container = document.getElementById(`d20-${playerId}`);
+  const resultEl  = document.getElementById(`d20result-${playerId}`);
+  const hintEl    = document.getElementById(`d20hint-${playerId}`);
+  if (!container || !resultEl) return;
+
+  container.classList.add("is-rolled");
+  if (roll === 20) container.classList.add("nat20");
+  resultEl.textContent = roll;
+  if (hintEl) hintEl.style.visibility = "hidden";
+}
+
+function checkAllRolled(players) {
+  const allDone = players.every(p => initiativeRolls[p.id] !== undefined);
+  if (!allDone) return;
+
+  // Sort descending — ties broken randomly
+  const sorted = [...players].sort((a, b) => {
+    const diff = initiativeRolls[b.id] - initiativeRolls[a.id];
+    return diff !== 0 ? diff : Math.random() - 0.5;
+  });
+
+  // Store initiative order on battleState
+  battleState.initiativeOrder = sorted.map(p => p.id);
+
+  // Render the order list
+  initiativeOrderList.innerHTML = sorted.map((p, i) => {
+    const score = initiativeRolls[p.id];
+    const nat = score === 20 ? " 🌟 Nat 20!" : score === 1 ? " 💀 Nat 1" : "";
+    return `<li class="${i === 0 ? "is-first" : ""}">
+      ${i + 1}. ${p.name} — <span class="order-score">${score}</span>${nat}
+    </li>`;
+  }).join("");
+
+  initiativeOrder.hidden = false;
+  initiativeStart.disabled = false;
+  initiativeStart.textContent = "⚔️ Iniciar Batalha";
+}
+
+function closeInitiativeModal() {
+  initiativeModal.classList.remove("is-open");
+  initiativeModal.setAttribute("aria-hidden", "true");
+}
+
+initiativeStart.addEventListener("click", () => {
+  if (initiativeStart.disabled) return;
+  closeInitiativeModal();
+  // Set currentTurnIndex to first in initiative order
+  battleState.currentTurnIndex = 0;
+  advanceTurnToNextAlive();
+  renderBattle();
+  startAi();
+});
+
+// ── Turn management ─────────────────────────────────────
+
+function currentTurnPlayer() {
+  if (!battleState || !battleState.initiativeOrder) return null;
+  const order = battleState.initiativeOrder;
+  for (let i = 0; i < order.length; i++) {
+    const idx = (battleState.currentTurnIndex + i) % order.length;
+    const player = battleState.players.find(p => p.id === order[idx]);
+    if (player && player.health > 0) return player;
+  }
+  return null;
+}
+
+function advanceTurn() {
+  if (!battleState || !battleState.initiativeOrder) return;
+  battleState.currentTurnIndex = (battleState.currentTurnIndex + 1) % battleState.initiativeOrder.length;
+  advanceTurnToNextAlive();
+}
+
+function advanceTurnToNextAlive() {
+  if (!battleState || !battleState.initiativeOrder) return;
+  const order = battleState.initiativeOrder;
+  for (let i = 0; i < order.length; i++) {
+    const idx = (battleState.currentTurnIndex + i) % order.length;
+    const player = battleState.players.find(p => p.id === order[idx]);
+    if (player && player.health > 0) {
+      battleState.currentTurnIndex = idx;
+      return;
+    }
+  }
+}
+
 function startBattle(humans, roomData = null) {
   closeCombatModal();
   stopAi();
   battleState = createBattle(humans, roomData);
+  battleState.currentTurnIndex = 0;
+  battleState.initiativeOrder = null;
   mainMenu.hidden = true;
   battlefield.hidden = false;
   battleTitle.textContent = humans === 1 ? "Jogar Solo" : `Sala Online ${battleState.roomId}`;
   setupRoomPanel(roomData);
   connectRoomSocket();
   renderBattle();
-  startAi();
+  // Open initiative modal instead of immediately starting AI
+  openInitiativeModal(battleState.players);
 }
 
 function setupRoomPanel(roomData) {
@@ -383,6 +574,20 @@ function sendRoomMessage(type, payload = {}) {
 function renderBattle(shouldBroadcast = true) {
   battleGrid.innerHTML = battleState.players.map(renderPlayer).join("");
   combatLog.innerHTML = battleState.log.slice(-8).map((item) => `<p>${item}</p>`).join("");
+
+  // Update attack button based on whose turn it is
+  const current = currentTurnPlayer();
+  if (battleState.finished || !battleState.initiativeOrder) {
+    humanAttack.disabled = !battleState.initiativeOrder || battleState.finished;
+    humanAttack.textContent = "Atacar";
+  } else if (current && current.isHuman) {
+    humanAttack.disabled = false;
+    humanAttack.textContent = `⚔️ Atacar (${current.name})`;
+  } else {
+    humanAttack.disabled = true;
+    humanAttack.textContent = current ? `Vez de ${current.name}...` : "Atacar";
+  }
+
   if (shouldBroadcast) {
     sendRoomMessage("state", { state: battleState });
   }
@@ -390,14 +595,22 @@ function renderBattle(shouldBroadcast = true) {
 
 function renderPlayer(player) {
   const statusClass = player.health <= 0 ? "is-defeated" : "";
+  const current = currentTurnPlayer();
+  const isActive = current && current.id === player.id && !battleState.finished;
+  const activeClass = isActive ? "is-active-turn" : "";
+  const initiative = (battleState.initiativeOrder || []).indexOf(player.id);
+  const initiativeLabel = initiative >= 0 ? `Iniciativa: ${initiativeRolls[player.id] || "?"} · ` : "";
   return `
-    <article class="player-board ${statusClass}">
+    <article class="player-board ${statusClass} ${activeClass}">
       <header class="player-header">
         <div>
           <strong>${player.name}</strong>
-          <span>${player.isHuman ? "Humano" : "IA"}${player.isHost ? " / Host" : ""}</span>
+          <span>${initiativeLabel}${player.isHuman ? "Humano" : "IA"}${player.isHost ? " / Host" : ""}</span>
         </div>
-        <span class="life-badge">${player.health} VIDA</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${isActive ? `<span class="turn-badge">🗡 Vez Atual</span>` : ""}
+          <span class="life-badge">${player.health} VIDA</span>
+        </div>
       </header>
       <div class="stats-row">
         <span>Alma ${player.soul}</span>
@@ -482,6 +695,13 @@ function attack(attacker) {
   }
 
   resolveWinner();
+
+  if (!battleState.finished) {
+    advanceTurn();
+    const next = currentTurnPlayer();
+    if (next) battleState.log.push(`Vez de ${next.name}.`);
+  }
+
   renderBattle();
 }
 
@@ -508,13 +728,13 @@ function resolveWinner() {
 }
 
 function aiStep() {
-  if (!battleState || battleState.finished) return;
+  if (!battleState || battleState.finished || !battleState.initiativeOrder) return;
 
-  const aiPlayers = battleState.players.filter((player) => !player.isHuman && player.health > 0);
-  aiPlayers.forEach((player) => {
-    equipAutomatically(player);
-    attack(player);
-  });
+  const current = currentTurnPlayer();
+  if (!current || current.isHuman) return;
+
+  equipAutomatically(current);
+  attack(current);
 }
 
 function startAi() {
@@ -527,10 +747,19 @@ function stopAi() {
 }
 
 function humanTurn() {
-  if (!battleState) return;
-  const human = battleState.players.find((player) => player.isHuman && player.health > 0);
-  equipAutomatically(human);
-  attack(human);
+  if (!battleState || !battleState.initiativeOrder) return;
+
+  const current = currentTurnPlayer();
+  if (!current) return;
+
+  if (!current.isHuman) {
+    battleState.log.push(`Ainda não é a sua vez — aguarde ${current.name} agir.`);
+    renderBattle();
+    return;
+  }
+
+  equipAutomatically(current);
+  attack(current);
 }
 
 combatChoices.forEach((choice) => {
