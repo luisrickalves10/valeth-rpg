@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Valeth RPG - Menu Principal</title>
+  <title>Valeth RPG</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="game-shell" aria-label="Menu principal de Valeth RPG">
+  <main class="game-shell" id="mainMenu" aria-label="Menu principal de Valeth RPG">
     <header class="hero-header">
       <h1>SE TORNE O HERÓI DE VALETH</h1>
     </header>
@@ -40,22 +40,81 @@
     </div>
 
     <nav class="main-menu" aria-label="Menu principal">
-      <button class="menu-button" type="button"><span>📖</span>Modo História</button>
-      <button class="menu-button" type="button"><span>⚔️</span>Modo Combate</button>
-      <button class="menu-button" type="button"><span>📚</span>Biblioteca Elanorium</button>
-      <button class="menu-button" type="button"><span>📜</span>Regras</button>
-      <button class="menu-button" type="button"><span>⚙️</span>Opções</button>
+      <button class="menu-button" type="button" data-menu-action="story"><span>📖</span>Modo História</button>
+      <button class="menu-button" type="button" data-menu-action="combat"><span>⚔️</span>Modo Combate</button>
+      <button class="menu-button" type="button" data-menu-action="library"><span>📚</span>Biblioteca Elanorium</button>
+      <button class="menu-button" type="button" data-menu-action="rules"><span>📜</span>Regras</button>
+      <button class="menu-button" type="button" data-menu-action="options"><span>⚙️</span>Opções</button>
     </nav>
 
     <footer class="credit">Desenvolvido por Luis Henrique</footer>
   </main>
 
+  <section class="battlefield" id="battlefield" aria-label="Modo Combate" hidden>
+    <header class="battle-topbar">
+      <div>
+        <p class="eyebrow">Modo Combate</p>
+        <h2 id="battleTitle">Campo de Batalha de Valeth</h2>
+      </div>
+      <div class="battle-actions">
+        <span class="socket-status" id="socketStatus">Online: aguardando sala</span>
+        <button class="battle-small-button" type="button" id="copyRoomLink">Copiar link</button>
+        <button class="battle-small-button" type="button" id="backToMenu">Menu</button>
+      </div>
+    </header>
+
+    <section class="room-panel" id="roomPanel" hidden>
+      <div>
+        <strong id="roomRole">Host</strong>
+        <p id="roomLinkText"></p>
+      </div>
+      <input id="roomLinkInput" readonly aria-label="Link da sala">
+    </section>
+
+    <section class="battle-grid" id="battleGrid"></section>
+
+    <aside class="battle-log" aria-label="Registro de combate">
+      <div class="battle-log-header">
+        <strong>Registro da Partida</strong>
+        <button class="battle-small-button" type="button" id="humanAttack">Atacar</button>
+      </div>
+      <div id="combatLog"></div>
+    </aside>
+  </section>
+
   <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-sigil">✦</div>
       <h2 id="modalTitle">Funcionalidade em desenvolvimento</h2>
-      <p>Este caminho ainda está sendo escrito nos anais de Valeth.</p>
+      <p id="modalMessage">Este caminho ainda está sendo escrito nos anais de Valeth.</p>
       <button class="modal-close" id="modalClose" type="button">Fechar</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="combatModal" aria-hidden="true">
+    <section class="modal combat-modal" role="dialog" aria-modal="true" aria-labelledby="combatModalTitle">
+      <div class="modal-sigil">⚔</div>
+      <h2 id="combatModalTitle">Escolha o Modo Combate</h2>
+      <p>Selecione quantos humanos participarão. As vagas restantes serão ocupadas pela IA de Valeth.</p>
+      <div class="combat-choice-grid">
+        <button type="button" class="combat-choice" data-humans="1">
+          <strong>Jogar Solo</strong>
+          <span>1 humano + 3 IA</span>
+        </button>
+        <button type="button" class="combat-choice" data-humans="2">
+          <strong>2 Jogadores</strong>
+          <span>2 humanos + 2 IA</span>
+        </button>
+        <button type="button" class="combat-choice" data-humans="3">
+          <strong>3 Jogadores</strong>
+          <span>3 humanos + 1 IA</span>
+        </button>
+        <button type="button" class="combat-choice" data-humans="4">
+          <strong>4 Jogadores</strong>
+          <span>4 humanos</span>
+        </button>
+      </div>
+      <button class="modal-close" id="combatModalClose" type="button">Fechar</button>
     </section>
   </div>
 

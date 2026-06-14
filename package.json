@@ -1,0 +1,12 @@
+{
+  "name": "valeth-rpg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Valeth RPG frontend and combat room prototype.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
