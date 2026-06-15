@@ -485,6 +485,15 @@ button {
     linear-gradient(145deg, #080604, #17100a 42%, #060404);
 }
 
+/* battle-main: players grid + decks column side by side */
+.battle-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .battlefield[hidden] {
   display: none;
 }
@@ -1087,4 +1096,299 @@ button {
     flex-basis: calc(50% - 4px);
     max-width: none;
   }
+}
+
+/* ── Battle layout: players + decks ──────────────────── */
+
+.battle-grid {
+  min-height: 0;
+  overflow: auto;
+}
+
+.decks-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Deck stacks (Monte Valeth & Cemitério) ──────────── */
+.deck-stack {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(214, 162, 74, 0.6);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(214,162,74,0.18), transparent 60%),
+    linear-gradient(160deg, rgba(28,18,6,0.98), rgba(8,6,4,0.98));
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.deck-stack::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed rgba(214,162,74,0.22);
+  pointer-events: none;
+}
+
+.deck-stack:hover:not(.is-empty) {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 22px rgba(214,162,74,0.45);
+  transform: translateY(-2px);
+}
+
+.deck-stack.is-empty {
+  opacity: 0.4;
+  cursor: default;
+  border-color: rgba(214,162,74,0.22);
+}
+
+.cemetery-deck {
+  cursor: default;
+  border-color: rgba(130, 60, 60, 0.65);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(130,30,30,0.22), transparent 60%),
+    linear-gradient(160deg, rgba(20,8,8,0.98), rgba(8,4,4,0.98));
+}
+
+.cemetery-deck::before {
+  border-color: rgba(180,60,60,0.2);
+}
+
+.deck-stack-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.deck-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.deck-name {
+  color: var(--gold-light);
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  display: block;
+}
+
+.cemetery-deck .deck-name { color: #d46060; }
+
+.deck-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(214,162,74,0.55);
+  background: rgba(0,0,0,0.45);
+  color: var(--gold-light);
+  font-size: 0.85rem;
+  font-weight: bold;
+  font-family: Georgia, serif;
+}
+
+.cemetery-deck .deck-count {
+  border-color: rgba(180,60,60,0.55);
+  color: #e88;
+}
+
+.deck-hint {
+  color: rgba(243,229,201,0.45);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.cemetery-preview {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.cem-thumb {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+/* ── Attack Total Row ────────────────────────────────── */
+.attack-total-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(214,162,74,0.3);
+  background: rgba(0,0,0,0.28);
+}
+
+.atk-label {
+  color: rgba(243,229,201,0.6);
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.atk-value {
+  color: var(--gold-light);
+  font-size: 1.15rem;
+  font-weight: bold;
+  font-family: Georgia, serif;
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+}
+
+.atk-breakdown {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  color: rgba(243,229,201,0.42);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+}
+
+/* ── Player badges ───────────────────────────────────── */
+.player-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.attack-badge {
+  padding: 4px 7px;
+  color: #ffe9a0;
+  border: 1px solid rgba(214,162,74,0.55);
+  background: rgba(60,38,8,0.6);
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* ── Card Action Modal ───────────────────────────────── */
+.card-action-modal {
+  max-width: 680px;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-action-body {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  min-height: 280px;
+}
+
+.card-action-img {
+  width: 200px;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-action-info {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-action-category {
+  color: var(--gold);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.card-action-info h2 {
+  margin: 0;
+  color: var(--gold-light);
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-action-info p {
+  margin: 0;
+  color: rgba(243,229,201,0.72);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.card-action-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.card-action-stats span {
+  padding: 4px 9px;
+  border: 1px solid rgba(214,162,74,0.35);
+  background: rgba(0,0,0,0.3);
+  color: rgba(243,229,201,0.85);
+  font-size: 0.78rem;
+}
+
+.card-action-stats strong {
+  color: var(--gold-light);
+}
+
+.card-action-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.card-action-btn {
+  flex: 1 1 auto;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.card-action-btn.confirm {
+  color: #0a0704;
+  background: linear-gradient(180deg, #ffe5a8, #c38432);
+  border: 1px solid #ffe7ad;
+}
+
+.card-action-btn.discard {
+  color: rgba(243,229,201,0.75);
+  background: rgba(60,10,10,0.7);
+  border: 1px solid rgba(180,60,60,0.55);
+}
+
+.card-action-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+
+@media (max-width: 560px) {
+  .card-action-body { grid-template-columns: 1fr; }
+  .card-action-img  { width: 100%; height: 160px; }
+  .battle-main { grid-template-columns: minmax(0,1fr) 90px; }
+  .deck-count  { width: 28px; height: 28px; font-size: 0.75rem; }
+  .deck-name   { font-size: 0.58rem; }
 }
