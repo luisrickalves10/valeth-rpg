@@ -7,12 +7,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="game-shell" id="mainMenu" aria-label="Menu principal de Valeth RPG">
+
+  <!-- ── TELA: MENU PRINCIPAL ───────────────────────── -->
+  <main class="screen" id="screenMenu" aria-label="Menu principal">
     <header class="hero-header">
       <h1>SE TORNE O HERÓI DE VALETH</h1>
     </header>
     <div class="map-frame">
-      <div class="map-stage" id="mapStage">
+      <div class="map-stage">
         <img class="valeth-map" src="assets/valeth.png" alt="Mapa do Reino de Valeth">
         <div class="vignette"></div>
         <div class="ornament ornament-top-left"></div>
@@ -20,17 +22,17 @@
         <div class="ornament ornament-bottom-left"></div>
         <div class="ornament ornament-bottom-right"></div>
         <section class="region-layer" aria-label="Regiões de Valeth">
-          <button class="region-hotspot" style="--x:46%;--y:34%;--size:12%;" data-region="Valeth" aria-label="Valeth"></button>
-          <button class="region-hotspot" style="--x:32%;--y:56%;--size:11%;" data-region="Corália" aria-label="Corália"></button>
-          <button class="region-hotspot" style="--x:25%;--y:18%;--size:12%;" data-region="Thurvael" aria-label="Thurvael"></button>
-          <button class="region-hotspot" style="--x:78%;--y:37%;--size:12%;" data-region="Valdruun" aria-label="Valdruun"></button>
-          <button class="region-hotspot" style="--x:20%;--y:86%;--size:11%;" data-region="A Forja" aria-label="A Forja"></button>
-          <button class="region-hotspot" style="--x:11%;--y:63%;--size:10%;" data-region="Eriadun" aria-label="Eriadun"></button>
-          <button class="region-hotspot" style="--x:51%;--y:21%;--size:10%;" data-region="Vorzak" aria-label="Vorzak"></button>
-          <button class="region-hotspot" style="--x:72%;--y:16%;--size:10%;" data-region="Uldor" aria-label="Uldor"></button>
-          <button class="region-hotspot" style="--x:89%;--y:25%;--size:12%;" data-region="Lua Silenciosa" aria-label="Lua Silenciosa"></button>
-          <button class="region-hotspot" style="--x:91%;--y:48%;--size:10%;" data-region="Lodamar" aria-label="Lodamar"></button>
-          <button class="region-hotspot" style="--x:72%;--y:76%;--size:18%;" data-region="Cinturão de Magmar" aria-label="Cinturão de Magmar"></button>
+          <button class="region-hotspot" style="--x:46%;--y:34%;--size:12%;" data-region="Valeth"></button>
+          <button class="region-hotspot" style="--x:32%;--y:56%;--size:11%;" data-region="Corália"></button>
+          <button class="region-hotspot" style="--x:25%;--y:18%;--size:12%;" data-region="Thurvael"></button>
+          <button class="region-hotspot" style="--x:78%;--y:37%;--size:12%;" data-region="Valdruun"></button>
+          <button class="region-hotspot" style="--x:20%;--y:86%;--size:11%;" data-region="A Forja"></button>
+          <button class="region-hotspot" style="--x:11%;--y:63%;--size:10%;" data-region="Eriadun"></button>
+          <button class="region-hotspot" style="--x:51%;--y:21%;--size:10%;" data-region="Vorzak"></button>
+          <button class="region-hotspot" style="--x:72%;--y:16%;--size:10%;" data-region="Uldor"></button>
+          <button class="region-hotspot" style="--x:89%;--y:25%;--size:12%;" data-region="Lua Silenciosa"></button>
+          <button class="region-hotspot" style="--x:91%;--y:48%;--size:10%;" data-region="Lodamar"></button>
+          <button class="region-hotspot" style="--x:72%;--y:76%;--size:18%;" data-region="Cinturão de Magmar"></button>
         </section>
         <div class="tooltip" id="regionTooltip" role="status" aria-live="polite"></div>
       </div>
@@ -45,23 +47,22 @@
     <footer class="credit">Desenvolvido por Luis Henrique</footer>
   </main>
 
-  <!-- ── BATTLEFIELD ─────────────────────────────── -->
-  <section class="battlefield" id="battlefield" aria-label="Modo Combate" hidden>
-
+  <!-- ── TELA: BATTLEFIELD ──────────────────────────── -->
+  <section class="screen" id="screenBattle" hidden aria-label="Modo Combate">
     <header class="battle-topbar">
-      <div>
+      <div class="topbar-left">
         <p class="eyebrow">Modo Combate</p>
         <h2 id="battleTitle">Campo de Batalha de Valeth</h2>
       </div>
       <div class="battle-actions">
-        <span class="socket-status" id="socketStatus">Online: aguardando sala</span>
+        <span class="socket-status" id="socketStatus">Solo</span>
         <button class="battle-small-button" type="button" id="copyRoomLink">Copiar link</button>
         <button class="battle-small-button" type="button" id="backToMenu">Menu</button>
       </div>
     </header>
 
     <!-- Painel de Iniciativa D20 -->
-    <section class="initiative-panel" id="initiativePanel" hidden aria-label="Rolagem de Iniciativa">
+    <section class="initiative-panel" id="initiativePanel" hidden>
       <div class="initiative-panel-header">
         <span class="initiative-panel-title">🎲 Rolagem de Iniciativa — maior resultado age primeiro</span>
         <button class="battle-small-button initiative-start-btn" id="initiativeStart" type="button" disabled>Aguardando rolagens...</button>
@@ -72,22 +73,17 @@
       </div>
     </section>
 
-    <!-- Sala -->
+    <!-- Sala online -->
     <section class="room-panel" id="roomPanel" hidden>
-      <div>
-        <strong id="roomRole">Host</strong>
-        <p id="roomLinkText"></p>
-      </div>
+      <div><strong id="roomRole">Host</strong><p id="roomLinkText"></p></div>
       <input id="roomLinkInput" readonly aria-label="Link da sala">
     </section>
 
-    <!-- Área central: grid de jogadores + montes -->
+    <!-- Área central -->
     <div class="battle-main">
       <section class="battle-grid" id="battleGrid"></section>
-
-      <!-- Monte Valeth + Cemitério -->
-      <aside class="decks-column" aria-label="Montes de cartas">
-        <div class="deck-stack valeth-deck" id="valethDeck" role="button" tabindex="0" aria-label="Monte Valeth — clique para comprar">
+      <aside class="decks-column">
+        <div class="deck-stack valeth-deck" id="valethDeck" role="button" tabindex="0" aria-label="Monte Valeth">
           <div class="deck-stack-inner">
             <span class="deck-icon">🃏</span>
             <strong class="deck-name">Monte Valeth</strong>
@@ -95,8 +91,7 @@
             <span class="deck-hint">Clique para comprar</span>
           </div>
         </div>
-
-        <div class="deck-stack cemetery-deck" id="cemetery" aria-label="Cemitério">
+        <div class="deck-stack cemetery-deck" id="cemetery" role="button" tabindex="0" aria-label="Cemitério">
           <div class="deck-stack-inner">
             <span class="deck-icon">💀</span>
             <strong class="deck-name">Cemitério</strong>
@@ -107,55 +102,61 @@
       </aside>
     </div>
 
-    <!-- Log de combate -->
-    <aside class="battle-log" aria-label="Registro de combate">
+    <!-- Log -->
+    <aside class="battle-log">
       <div class="battle-log-header">
         <strong>Registro da Partida</strong>
         <button class="battle-small-button" type="button" id="humanAttack">Atacar</button>
       </div>
       <div id="combatLog"></div>
     </aside>
-
   </section>
 
-  <!-- ── MODAIS ──────────────────────────────────── -->
+  <!-- ── TELA: VISUALIZADOR DE CARTAS (Monte / Cemitério) ── -->
+  <section class="screen" id="screenCards" hidden aria-label="Visualizador de cartas">
+    <header class="cards-screen-header">
+      <h2 id="cardsScreenTitle">Monte Valeth</h2>
+      <button class="battle-small-button" type="button" id="backToBattle">← Voltar</button>
+    </header>
+    <div class="cards-screen-grid" id="cardsScreenGrid"></div>
+  </section>
+
+  <!-- ── MODAIS ──────────────────────────────────────── -->
+
+  <!-- Mensagem genérica -->
   <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <section class="modal" role="dialog" aria-modal="true">
       <div class="modal-sigil">✦</div>
-      <h2 id="modalTitle">Funcionalidade em desenvolvimento</h2>
-      <p id="modalMessage">Este caminho ainda está sendo escrito nos anais de Valeth.</p>
+      <h2 id="modalTitle">Aviso</h2>
+      <p id="modalMessage"></p>
       <button class="modal-close" id="modalClose" type="button">Fechar</button>
     </section>
   </div>
 
-  <div class="modal-backdrop" id="combatModal" aria-hidden="true">
-    <section class="modal combat-modal" role="dialog" aria-modal="true" aria-labelledby="combatModalTitle">
+  <!-- Configuração da partida (nomear jogadores) -->
+  <div class="modal-backdrop" id="setupModal" aria-hidden="true">
+    <section class="modal setup-modal" role="dialog" aria-modal="true">
       <div class="modal-sigil">⚔</div>
-      <h2 id="combatModalTitle">Escolha o Modo Combate</h2>
-      <p>Selecione quantos humanos participarão. As vagas restantes serão ocupadas pela IA de Valeth.</p>
-      <div class="combat-choice-grid">
-        <button type="button" class="combat-choice" data-humans="1"><strong>Jogar Solo</strong><span>1 humano + 3 IA</span></button>
-        <button type="button" class="combat-choice" data-humans="2"><strong>2 Jogadores</strong><span>2 humanos + 2 IA</span></button>
-        <button type="button" class="combat-choice" data-humans="3"><strong>3 Jogadores</strong><span>3 humanos + 1 IA</span></button>
-        <button type="button" class="combat-choice" data-humans="4"><strong>4 Jogadores</strong><span>4 humanos</span></button>
-      </div>
-      <button class="modal-close" id="combatModalClose" type="button">Fechar</button>
+      <h2>Configurar Partida</h2>
+      <p>Nomeie cada participante e defina se é Humano ou Máquina.</p>
+      <div class="setup-players" id="setupPlayers"></div>
+      <button class="modal-confirm" id="setupConfirm" type="button">⚔️ Iniciar Partida</button>
+      <button class="modal-close" id="setupClose" type="button">Cancelar</button>
     </section>
   </div>
 
-  <!-- Modal de ação de carta do Monte Valeth -->
-  <div class="modal-backdrop" id="cardActionModal" aria-hidden="true">
-    <section class="modal card-action-modal" role="dialog" aria-modal="true" aria-labelledby="cardActionName">
-      <div class="card-action-body">
-        <img class="card-action-img" id="cardActionImg" src="" alt="">
-        <div class="card-action-info">
-          <div class="card-action-category" id="cardActionCategory"></div>
-          <h2 id="cardActionName">—</h2>
-          <p id="cardActionDesc"></p>
-          <div class="card-action-stats" id="cardActionStats"></div>
-          <div class="card-action-btns" id="cardActionBtns"></div>
-        </div>
+  <!-- Carta ampliada (qualquer carta do jogo) -->
+  <div class="modal-backdrop" id="cardViewModal" aria-hidden="true">
+    <section class="modal card-view-modal" role="dialog" aria-modal="true">
+      <img class="card-view-img" id="cardViewImg" src="" alt="">
+      <div class="card-view-info">
+        <div class="card-action-category" id="cardViewCat"></div>
+        <h2 id="cardViewName"></h2>
+        <div class="card-action-stats" id="cardViewStats"></div>
+        <p id="cardViewDesc"></p>
+        <div class="card-action-btns" id="cardViewBtns"></div>
       </div>
+      <button class="card-view-close" id="cardViewClose" type="button">✕</button>
     </section>
   </div>
 
