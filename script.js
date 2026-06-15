@@ -428,11 +428,18 @@ function showValethCardChoice(card,player){
   };
   const onDiscard=()=>{discardCard(card);logEvent(`${player.name} descartou "${card.name}" ao Cemitério.`);done();};
 
+  // ── HERÓI: adicionar ao slot de herói ou descartar (sem duelo)
   if(card.role==="hero"){
+    const curr=player.hero?`Herói atual: "${player.hero.name}" (Ataque ${player.hero.magic+player.hero.strength})`:"Sem herói equipado.";
     openCardView(card,[
-      {label:"⚔️ Batalhar contra este Herói",cls:"confirm",fn:()=>resolveHeroDuel(card,player,done)},
-      {label:"🗑 Descartar",cls:"discard",fn:onDiscard},
-    ],`Ataque do Herói: ${card.strength+card.magic} | Seu Ataque Total: ${calcTotalAttack(player)}`);
+      {label:`👑 Substituir meu Herói (Ataque ${card.magic+card.strength})`,cls:"confirm",fn:()=>{
+        if(player.hero)discardCard(player.hero);
+        player.hero=card;
+        logEvent(`👑 ${player.name} substituiu o herói por "${card.name}" (Ataque ${card.magic+card.strength}).`);
+        done();
+      }},
+      {label:"🗑 Descartar ao Cemitério",cls:"discard",fn:onDiscard},
+    ],curr);
     return;
   }
   if(card.role==="weapon"){
@@ -541,9 +548,16 @@ function autoResolveCard(card,player){
       } else {discardCard(card);}
       break;
     case "hero":
+      // Machine upgrades hero if stronger, otherwise discards
+      if(!player.hero||(card.magic+card.strength)>(player.hero.magic+player.hero.strength)){
+        if(player.hero)discardCard(player.hero);
+        player.hero=card;
+        logEvent(`👑 ${player.name} substituiu o herói por "${card.name}".`);
+      } else {discardCard(card);logEvent(`${player.name} descartou "${card.name}" (herói mais fraco).`);}
+      break;
     case "combat":
       resolveHeroDuel(card,player,done);
-      return; // done called inside
+      return;
     default:
       discardCard(card);
   }
