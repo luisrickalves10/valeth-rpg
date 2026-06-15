@@ -438,3 +438,27 @@ button { font: inherit; border: none; cursor: pointer; background: none; color: 
   .deck-slots  { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .initiative-inline-grid .initiative-card { flex-basis:calc(50% - 4px);max-width:none; }
 }
+
+/* ── Combat log — highlighted entries ────────────────── */
+.log-entry   { font-size:.82rem; line-height:1.5; padding:3px 6px; border-radius:2px; margin-bottom:2px; }
+.log-duel    { font-size:.95rem !important; font-weight:bold; padding:5px 8px !important;
+               border-left:3px solid rgba(214,162,74,.7); background:rgba(214,162,74,.07); color:var(--gold-light); }
+.log-victory { color:#7effa0 !important; background:rgba(0,120,50,.15) !important;
+               border-left-color:#4caf50 !important; font-size:1rem !important; }
+.log-defeat  { color:#ff9090 !important; background:rgba(120,0,0,.18) !important;
+               border-left-color:#c0392b !important; }
+.log-magic   { color:#d0aaff !important; background:rgba(100,0,160,.12) !important;
+               border-left:3px solid rgba(160,80,255,.55); }
+.log-shield  { color:#80cfff !important; background:rgba(0,80,160,.12) !important;
+               border-left:3px solid rgba(60,140,255,.55); }
+.log-initiative{ color:var(--gold) !important; background:rgba(214,162,74,.08) !important;
+               border-left:3px solid rgba(214,162,74,.45); font-size:.82rem; }
+.log-turn    { color:rgba(243,229,201,.65) !important; font-style:italic; font-size:.78rem; }
+
+/* ── Phase badges on player board ────────────────────── */
+.phase-badge {
+  padding:2px 6px; font-size:.62rem; font-weight:bold;
+  letter-spacing:.08em; text-transform:uppercase;
+}
+.phase-draw   { color:#0a0704; background:linear-gradient(90deg,#82c8ff,#4a9fd4); }
+.phase-attack { color:#0a0704; background:linear-gradient(90deg,#ffb347,#e67e22); }
