@@ -421,7 +421,11 @@ function drawFromValeth(player,isMachine){
 
 // ── Card resolution for HUMAN ─────────────────────────────
 function showValethCardChoice(card,player){
-  const done=()=>{battleState.waitingForCard=false;renderDecks();renderBattle();};
+  const done=()=>{
+    battleState.waitingForCard=false;
+    battleState.turnPhase="attack"; // card drawn and resolved → now must attack
+    renderDecks();renderBattle();
+  };
   const onDiscard=()=>{discardCard(card);logEvent(`${player.name} descartou "${card.name}" ao Cemitério.`);done();};
 
   if(card.role==="hero"){
