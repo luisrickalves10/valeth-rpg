@@ -209,9 +209,11 @@ button { font: inherit; border: none; cursor: pointer; background: none; color: 
 .room-panel p       { margin-top:2px;color:rgba(243,229,201,.78);font-size:.8rem; }
 .room-panel input   { width:100%;padding:7px 9px;color:#ffe9b7;background:rgba(0,0,0,.46);border:1px solid rgba(214,162,74,.45);font:inherit; }
 
-/* battle-main: grid + decks column */
+/* battle-main: grid + battlefield center + decks column */
 .battle-main {
-  flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;overflow:hidden;
+  flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,1fr) 220px 110px;
+  gap:8px;overflow:hidden;
 }
 .battle-grid {
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
@@ -462,3 +464,32 @@ button { font: inherit; border: none; cursor: pointer; background: none; color: 
 }
 .phase-draw   { color:#0a0704; background:linear-gradient(90deg,#82c8ff,#4a9fd4); }
 .phase-attack { color:#0a0704; background:linear-gradient(90deg,#ffb347,#e67e22); }
+
+/* ── Battlefield Center ──────────────────────────────── */
+.battlefield-center {
+  position:relative;display:flex;flex-direction:column;align-items:center;
+  border:1px solid rgba(214,162,74,.55);
+  background:
+    radial-gradient(ellipse at 50% 50%,rgba(60,30,10,.65) 0%,rgba(8,6,4,.97) 100%),
+    repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(214,162,74,.04) 28px,rgba(214,162,74,.04) 29px),
+    repeating-linear-gradient(90deg,transparent,transparent 28px,rgba(214,162,74,.04) 28px,rgba(214,162,74,.04) 29px);
+  overflow:hidden;
+}
+.battlefield-center::before {
+  content:"";position:absolute;inset:6px;
+  border:1px dashed rgba(214,162,74,.18);pointer-events:none;z-index:0;
+  border-radius:50%;
+}
+.bf-title {
+  flex-shrink:0;padding:4px 0 2px;
+  color:rgba(214,162,74,.65);font-size:.62rem;letter-spacing:.18em;
+  text-transform:uppercase;z-index:1;
+}
+.bf-canvas {
+  flex:1;width:100%;min-height:0;display:block;z-index:1;
+}
+
+@media (max-width:900px) {
+  .battle-main { grid-template-columns:minmax(0,1fr) 88px; }
+  .battlefield-center { display:none; }
+}

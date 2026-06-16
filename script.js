@@ -698,8 +698,7 @@ function renderBattle(broadcast=true){
   }).join("");
 
   renderDecks();
-
-  const cur=currentTurnPlayer();
+  BF.sync(); // sync battlefield markers with current state
   if(!battleState.initiativeOrder||battleState.finished){
     humanAttack.disabled=true;humanAttack.textContent="Atacar";
   } else if(cur?.isHuman){
@@ -812,12 +811,20 @@ function performAttack(attacker){
   const target=targetForAttack(attacker);if(!target)return;
   const atk=calcTotalAttack(attacker);
   const defBonus=target.armor?.defense||0;
-  const dmg=Math.max(2,atk-Math.floor(defBonus/2));  // defense slightly mitigates incoming
+  const dmg=Math.max(2,atk-Math.floor(defBonus/2));
   target.health=Math.max(0,target.health-dmg);
   attacker.gold+=target.health===0?10:2;
   attacker.xp  +=target.health===0?5:1;
   logEvent(`⚔️ ${attacker.name} atacou ${target.name} — ${dmg} dano (Ataque ${atk} − Def ${Math.floor(defBonus/2)}).`);
-  if(target.health===0)logEvent(`💀 ${target.name} foi derrotado!`);
+
+  // Battlefield animation
+  const aIdx=battleState.players.findIndex(p=>p.id===attacker.id);
+  BF.triggerAttack(attacker.id, target.id, dmg, ["#4a90e2","#e24a4a","#4ae26a","#b44ae2"][aIdx]||"#fff");
+
+  if(target.health===0){
+    logEvent(`💀 ${target.name} foi derrotado!`);
+    setTimeout(()=>BF.triggerDeath(target.id), 400);
+  }
   resolveWinner();
 }
 
@@ -874,6 +881,370 @@ function humanAttackAction(){
   if(!battleState.finished){endTurn();}
   renderBattle();
 }
+
+// ═══════════════════════════════════════════════════════
+//  BATTLEFIELD VISUALIZATION ENGINE
+// ═══════════════════════════════════════════════════════
+
+const BF = (() => {
+  // Player color themes: ring, glow, trail
+  const PLAYER_COLORS = [
+    { ring:"#4a90e2", glow:"rgba(74,144,226,.55)", trail:"rgba(74,144,226,.4)",  label:"Azul"   },
+    { ring:"#e24a4a", glow:"rgba(226,74,74,.55)",  trail:"rgba(226,74,74,.4)",   label:"Vermelho"},
+    { ring:"#4ae26a", glow:"rgba(74,226,106,.55)", trail:"rgba(74,226,106,.4)",  label:"Verde"  },
+    { ring:"#b44ae2", glow:"rgba(180,74,226,.55)", trail:"rgba(180,74,226,.4)",  label:"Roxo"   },
+  ];
+
+  // Slot keys that can generate markers
+  const SLOT_KEYS = ["hero","animal","weapon","magicItem","armor"];
+  const SLOT_LABELS = {hero:"Herói",animal:"Animal",weapon:"Arma",magicItem:"Mágica",armor:"Defesa"};
+
+  let canvas, ctx, W, H, raf;
+  let markers  = [];   // { id, playerId, playerIdx, slotKey, card, x, y, tx, ty, homeX, homeY, alpha, scale, state, particles, shakeT }
+  let effects  = [];   // { type, x, y, color, t, dur, value? }
+  let shakeX=0, shakeY=0, shakeMag=0;
+
+  // ── Layout helpers ────────────────────────────────────
+  function playerHome(playerIdx, slotIdx, total) {
+    // Players arranged in 4 quadrants; slots spread around the player center
+    const CX=W/2, CY=H/2, R=Math.min(W,H)*0.31;
+    const angles=[225,315,135,45]; // degrees for p0..p3
+    const deg=angles[playerIdx]*(Math.PI/180);
+    const px=CX+Math.cos(deg)*R;
+    const py=CY+Math.sin(deg)*R;
+
+    // Slots orbit the player center
+    const slotR=Math.min(W,H)*0.08;
+    const slotAngle=(slotIdx/total)*Math.PI*2 - Math.PI/2;
+    return {
+      x: px+Math.cos(slotAngle)*slotR,
+      y: py+Math.sin(slotAngle)*slotR,
+    };
+  }
+
+  // ── Build / sync markers from battleState ──────────────
+  function sync() {
+    if(!battleState || !canvas) return;
+    const next = [];
+
+    battleState.players.forEach((player, pIdx) => {
+      const occupied = SLOT_KEYS.filter(k => player[k]);
+      occupied.forEach((slotKey, sIdx) => {
+        const card = player[slotKey];
+        const id   = `${player.id}-${slotKey}`;
+        const home = playerHome(pIdx, sIdx, occupied.length);
+
+        const existing = markers.find(m => m.id === id);
+        if(existing) {
+          existing.homeX = home.x;
+          existing.homeY = home.y;
+          existing.card  = card;
+          existing.playerIdx = pIdx;
+          next.push(existing);
+        } else {
+          next.push({
+            id, playerId:player.id, playerIdx:pIdx, slotKey,
+            card, alpha:0, scale:0.1,
+            x:home.x, y:home.y, homeX:home.x, homeY:home.y,
+            tx:home.x, ty:home.y,
+            state:"idle",  // idle | attacking | dying
+            particles:[], shakeT:0,
+            imgEl:null,
+          });
+        }
+      });
+
+      // Markers for dead player: fade out
+      if(player.health <= 0) {
+        markers.filter(m=>m.playerId===player.id).forEach(m=>{
+          if(m.state!=="dying"){ m.state="dying"; m.shakeT=0; }
+        });
+      }
+    });
+
+    // Markers no longer in next (slot emptied) → mark dying
+    markers.forEach(m=>{
+      if(!next.find(n=>n.id===m.id) && m.state!=="dying"){
+        m.state="dying"; next.push(m);
+      }
+    });
+
+    markers = next;
+  }
+
+  // ── Preload card image ────────────────────────────────
+  const imgCache = {};
+  function getImg(src) {
+    if(imgCache[src]) return imgCache[src];
+    const img = new Image();
+    img.src   = src;
+    imgCache[src] = img;
+    return img;
+  }
+
+  // ── Trigger attack animation ──────────────────────────
+  function triggerAttack(attackerId, targetId, dmg, color) {
+    const atk = markers.find(m=>m.playerId===attackerId && m.slotKey==="hero");
+    const tgt = markers.find(m=>m.playerId===targetId   && m.slotKey==="hero");
+    if(!atk || !tgt) return;
+
+    atk.state = "attacking";
+    atk.tx    = tgt.homeX;
+    atk.ty    = tgt.homeY;
+    atk.attackTarget = { x:tgt.homeX, y:tgt.homeY };
+
+    // After dash time → return home + spawn effects
+    setTimeout(()=>{
+      // Impact pulse on target
+      spawnEffect("pulse",  tgt.homeX, tgt.homeY, PLAYER_COLORS[tgt.playerIdx]?.ring||"#fff");
+      spawnEffect("damage", tgt.homeX, tgt.homeY - 18, PLAYER_COLORS[atk.playerIdx]?.ring||"#fff", dmg);
+      // Shake
+      shakeMag = Math.min(12, 4 + dmg * 0.1);
+      tgt.shakeT = 18;
+
+      setTimeout(()=>{
+        atk.state="idle";
+        atk.tx=atk.homeX; atk.ty=atk.homeY;
+      }, 220);
+    }, 340);
+
+    // Particle trail
+    spawnTrail(atk, tgt, PLAYER_COLORS[atk.playerIdx]?.trail||"rgba(255,255,255,.4)");
+  }
+
+  function triggerDeath(playerId) {
+    markers.filter(m=>m.playerId===playerId).forEach(m=>{
+      m.state="dying";
+      spawnEffect("smoke", m.homeX, m.homeY, "#aaa");
+    });
+  }
+
+  // ── Effects ───────────────────────────────────────────
+  function spawnEffect(type,x,y,color,value){
+    effects.push({type,x,y,color,t:0,dur:type==="pulse"?28:type==="smoke"?55:type==="damage"?60:30,value});
+  }
+  function spawnTrail(from,to,color){
+    const steps=10;
+    for(let i=0;i<steps;i++){
+      const f=i/steps;
+      setTimeout(()=>{
+        spawnEffect("particle",
+          from.x+(to.homeX-from.x)*f + (Math.random()-.5)*8,
+          from.y+(to.homeY-from.y)*f + (Math.random()-.5)*8,
+          color);
+      },i*30);
+    }
+  }
+
+  // ── Draw one frame ────────────────────────────────────
+  function draw() {
+    if(!ctx) return;
+    ctx.clearRect(0,0,W,H);
+
+    // Screen shake
+    if(shakeMag>0.5){
+      shakeX=(Math.random()-.5)*shakeMag;
+      shakeY=(Math.random()-.5)*shakeMag;
+      shakeMag*=0.78;
+    } else { shakeX=0;shakeY=0;shakeMag=0; }
+    ctx.save(); ctx.translate(shakeX,shakeY);
+
+    // Draw faint arena ring
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(W/2,H/2,Math.min(W,H)*0.42,0,Math.PI*2);
+    ctx.strokeStyle="rgba(214,162,74,.12)";
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw player territory labels
+    if(battleState) {
+      battleState.players.forEach((p,pIdx)=>{
+        if(p.health<=0) return;
+        const angles=[225,315,135,45];
+        const deg=angles[pIdx]*(Math.PI/180);
+        const R=Math.min(W,H)*0.42;
+        const lx=W/2+Math.cos(deg)*R*0.88;
+        const ly=H/2+Math.sin(deg)*R*0.88;
+        const col=PLAYER_COLORS[pIdx];
+        ctx.save();
+        ctx.globalAlpha=0.5;
+        ctx.fillStyle=col.ring;
+        ctx.font=`bold ${Math.max(8,W*0.035)}px sans-serif`;
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText(p.name,lx,ly);
+        ctx.restore();
+      });
+    }
+
+    // Draw connector lines between markers of same player
+    const byPlayer={};
+    markers.forEach(m=>{ if(m.alpha>.1){ (byPlayer[m.playerId]=byPlayer[m.playerId]||[]).push(m); } });
+    Object.entries(byPlayer).forEach(([pid,ms])=>{
+      if(ms.length<2) return;
+      const col=PLAYER_COLORS[ms[0].playerIdx];
+      ctx.save();
+      ctx.strokeStyle=col.ring;
+      ctx.globalAlpha=0.12;
+      ctx.lineWidth=1;
+      ctx.setLineDash([3,5]);
+      for(let i=1;i<ms.length;i++){
+        ctx.beginPath();
+        ctx.moveTo(ms[0].x,ms[0].y);
+        ctx.lineTo(ms[i].x,ms[i].y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+
+    // Update & draw effects first (behind markers)
+    effects=effects.filter(e=>e.t<e.dur);
+    effects.forEach(e=>{
+      const p=e.t/e.dur; // 0→1
+      e.t++;
+      ctx.save();
+      if(e.type==="pulse"){
+        const r=8+p*28;
+        ctx.beginPath();ctx.arc(e.x,e.y,r,0,Math.PI*2);
+        ctx.strokeStyle=e.color;
+        ctx.globalAlpha=(1-p)*0.9;
+        ctx.lineWidth=2+p*3;
+        ctx.stroke();
+      } else if(e.type==="smoke"){
+        for(let s=0;s<3;s++){
+          const r=4+p*22+s*8;
+          ctx.beginPath();ctx.arc(e.x+(s-1)*6,e.y-p*20,r,0,Math.PI*2);
+          ctx.fillStyle=e.color;
+          ctx.globalAlpha=(1-p)*0.18;
+          ctx.fill();
+        }
+      } else if(e.type==="particle"){
+        const r=3*(1-p);
+        ctx.beginPath();ctx.arc(e.x,e.y-p*12,r,0,Math.PI*2);
+        ctx.fillStyle=e.color;
+        ctx.globalAlpha=(1-p)*0.9;
+        ctx.fill();
+      } else if(e.type==="damage"){
+        ctx.fillStyle=e.color;
+        ctx.globalAlpha=p<0.7?1:1-(p-.7)/.3;
+        ctx.font=`bold ${Math.max(11,W*0.055)}px sans-serif`;
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText(`-${e.value}`,e.x,e.y-p*22);
+      }
+      ctx.restore();
+    });
+
+    // Update & draw markers
+    markers.forEach(m=>{
+      // Animate alpha & scale
+      if(m.state==="dying"){
+        m.alpha  = Math.max(0, m.alpha  - 0.04);
+        m.scale  = Math.max(0, m.scale  - 0.03);
+      } else {
+        m.alpha  = Math.min(1, m.alpha  + 0.06);
+        m.scale  = Math.min(1, m.scale  + 0.05);
+      }
+
+      // Lerp toward target
+      m.x += (m.tx - m.x) * 0.18;
+      m.y += (m.ty - m.y) * 0.18;
+
+      if(m.alpha < 0.01 && m.state==="dying") return; // fully gone
+
+      const col  = PLAYER_COLORS[m.playerIdx];
+      const R    = Math.max(14, Math.min(W,H) * (m.slotKey==="hero"?0.078:0.055));
+      const isHero = m.slotKey==="hero";
+
+      ctx.save();
+      ctx.globalAlpha = m.alpha;
+      ctx.translate(m.x, m.y);
+      ctx.scale(m.scale, m.scale);
+
+      // Glow
+      if(isHero){
+        const grd=ctx.createRadialGradient(0,0,R*.5,0,0,R*2);
+        grd.addColorStop(0,col.glow);
+        grd.addColorStop(1,"transparent");
+        ctx.beginPath();ctx.arc(0,0,R*2,0,Math.PI*2);
+        ctx.fillStyle=grd;ctx.fill();
+      }
+
+      // Portrait clip
+      ctx.save();
+      ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.clip();
+      const img=getImg(m.card.file);
+      if(img.complete && img.naturalWidth){
+        ctx.drawImage(img,-R,-R,R*2,R*2);
+      } else {
+        ctx.fillStyle="#222";ctx.fill();
+      }
+      ctx.restore();
+
+      // Ring
+      ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);
+      ctx.strokeStyle=col.ring;
+      ctx.lineWidth=isHero?3:2;
+      ctx.stroke();
+
+      // Inner white ring
+      ctx.beginPath();ctx.arc(0,0,R-2.5,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,.18)";
+      ctx.lineWidth=1;ctx.stroke();
+
+      // Slot label below
+      ctx.fillStyle=col.ring;
+      ctx.globalAlpha=m.alpha*0.85;
+      ctx.font=`${Math.max(7,R*.38)}px sans-serif`;
+      ctx.textAlign="center";ctx.textBaseline="top";
+      ctx.fillText(SLOT_LABELS[m.slotKey],0,R+2);
+
+      ctx.restore();
+    });
+
+    // Remove fully-dead markers
+    markers=markers.filter(m=>!(m.state==="dying"&&m.alpha<0.01));
+
+    ctx.restore(); // shake
+  }
+
+  // ── Resize handler ─────────────────────────────────────
+  function resize(){
+    if(!canvas)return;
+    const rect=canvas.getBoundingClientRect();
+    W=canvas.width =rect.width  *devicePixelRatio;
+    H=canvas.height=rect.height *devicePixelRatio;
+    ctx.scale(devicePixelRatio,devicePixelRatio);
+    W=rect.width; H=rect.height; // logical pixels
+    sync();
+  }
+
+  // ── RAF loop ──────────────────────────────────────────
+  function loop(){raf=requestAnimationFrame(loop);draw();}
+
+  // ── Public API ─────────────────────────────────────────
+  function init(){
+    canvas=document.getElementById("bfCanvas");
+    if(!canvas)return;
+    ctx=canvas.getContext("2d");
+    const ro=new ResizeObserver(()=>resize());
+    ro.observe(canvas);
+    resize();
+    loop();
+  }
+
+  return {
+    init,
+    sync,
+    triggerAttack,
+    triggerDeath,
+  };
+})();
+
+// ── Start battlefield after DOM ready ────────────────────
+document.addEventListener("DOMContentLoaded",()=>BF.init(), {once:true});
+// Also init immediately if DOM already loaded
+if(document.readyState!=="loading") BF.init();
 
 // ── Start battle ──────────────────────────────────────────
 function startBattle(playerConfigs){
