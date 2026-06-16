@@ -302,7 +302,10 @@ menuButtons.forEach(b=>{
 });
 
 // ── Card View Modal ───────────────────────────────────────
+let _cardViewDoneOnClose = null; // called if modal closed without action
+
 function openCardView(card,actionBtns=[],subtitle=""){
+  _cardViewDoneOnClose = null;
   cardViewImg.src=card.file; cardViewImg.alt=card.name;
   cardViewName.textContent=card.name;
   cardViewCat.textContent=`${ROLE_ICONS[card.role]} ${ROLE_LABELS[card.role]} · ${card.type}`;
@@ -319,12 +322,28 @@ function openCardView(card,actionBtns=[],subtitle=""){
   actionBtns.forEach(({label,cls,fn})=>{
     const b=document.createElement("button");
     b.className=`card-action-btn ${cls}`;b.textContent=label;
-    b.onclick=()=>{closeCardView();fn();};
+    b.onclick=()=>{ _cardViewDoneOnClose=null; closeCardView(); fn(); };
     cardViewBtns.appendChild(b);
   });
+  // If this card view is blocking a turn, store fallback
+  if(actionBtns.length > 0 && battleState?.waitingForCard){
+    // Closing without action = auto-discard to unblock
+    _cardViewDoneOnClose = ()=>{
+      if(battleState?.waitingForCard){
+        battleState.waitingForCard=false;
+        battleState.turnPhase="attack";
+        discardCard(card);
+        logEvent(`${currentTurnPlayer()?.name||"Jogador"} fechou o modal — carta descartada automaticamente.`);
+        renderDecks(); renderBattle();
+      }
+    };
+  }
   cardViewModal.classList.add("is-open");cardViewModal.setAttribute("aria-hidden","false");
 }
-function closeCardView(){cardViewModal.classList.remove("is-open");cardViewModal.setAttribute("aria-hidden","true");}
+function closeCardView(){
+  cardViewModal.classList.remove("is-open");cardViewModal.setAttribute("aria-hidden","true");
+  if(_cardViewDoneOnClose){ const fn=_cardViewDoneOnClose; _cardViewDoneOnClose=null; fn(); }
+}
 cardViewClose.addEventListener("click",closeCardView);
 cardViewModal.addEventListener("click",e=>{if(e.target===cardViewModal)closeCardView();});
 
@@ -842,7 +861,18 @@ function resolveWinner(){
 // and the game is in the right phase.
 function machineStep(){
   if(!battleState||battleState.finished||!battleState.initiativeOrder)return;
-  if(battleState.waitingForCard)return;
+  // Safety: if waitingForCard is stuck (human closed modal without action), it's already
+  // handled by closeCardView. But for machine turns, never block.
+  if(battleState.waitingForCard){
+    const cur=currentTurnPlayer();
+    if(cur&&!cur.isHuman){
+      // Force-clear stuck state for machine
+      battleState.waitingForCard=false;
+      battleState.turnPhase="attack";
+    } else {
+      return; // human must resolve
+    }
+  }
   const cur=currentTurnPlayer();
   if(!cur||cur.isHuman)return;
 
